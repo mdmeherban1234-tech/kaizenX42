@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>kaizenX — Live Voice & Craftland AI</title>
+<style>
+:root{--bg-dark:#090611;--surface:rgba(24,15,40,.78);--surface-elevated:rgba(38,22,62,.92);--border-glow:rgba(236,72,153,.35);--text-main:#f8fafc;--text-muted:#cbd5e1}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100dvh;background:radial-gradient(circle at 50% 18%,#2b104a 0%,#110820 48%,var(--bg-dark) 100%);color:var(--text-main);display:flex;flex-direction:column;overflow-x:hidden}
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(12,7,22,.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.08)}
+.header-left,.header-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:var(--surface);color:var(--text-main);display:grid;place-items:center;cursor:pointer;font-size:18px}
+.icon-btn:active{transform:scale(.94)}
+.icon-btn.off{opacity:.45}
+.brand-title{font-size:18px;font-weight:700;background:linear-gradient(90deg,#f472b6,#c084fc,#60a5fa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.chip{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--border-glow);background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(236,72,153,.25));color:#f5d0fe;cursor:pointer}
+.menu-dropdown{position:fixed;top:62px;left:16px;z-index:50;width:240px;background:var(--surface-elevated);backdrop-filter:blur(20px);border:1px solid var(--border-glow);border-radius:16px;padding:8px;display:none;flex-direction:column;gap:4px;box-shadow:0 14px 36px rgba(0,0,0,.65)}
+.menu-dropdown.open,.plus-popup.open,.live-voice-strip.active{display:flex}
+.menu-item,.plus-option{padding:10px 12px;border-radius:10px;background:transparent;border:none;color:var(--text-main);text-align:left;font-size:14px;cursor:pointer}
+.menu-item:hover{background:rgba(236,72,153,.18)}
+.plus-option:hover{background:rgba(139,92,246,.24)}
+main{flex:1;display:flex;flex-direction:column;max-width:720px;width:100%;margin:0 auto;padding:14px 14px 190px;gap:14px}
+.badge-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mode-pill{padding:6px 12px;border-radius:999px;font-size:12px;background:rgba(24,15,40,.85);border:1px solid rgba(192,132,252,.35);color:#e9d5ff;cursor:pointer}
+.status-banner{display:none;padding:10px 14px;border-radius:14px;font-size:13px;background:rgba(236,72,153,.16);border:1px solid rgba(236,72,153,.45);color:#fbcfe8;white-space:pre-wrap}
+.status-banner.visible{display:block}
+.orb-stage{display:flex;justify-content:center;padding:10px 0 6px}
+.voice-orb{width:156px;height:156px;margin:-6px 0;border-radius:50%;position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;contain:layout paint}
+.voice-orb canvas{width:100%;height:100%;display:block;pointer-events:none}
+.voice-orb:active{transform:scale(.96)}
+.chat-list{display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:12px 15px;border-radius:18px;font-size:14.5px;line-height:1.5;word-wrap:break-word;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#db2777,#7c3aed);color:#fff;border-bottom-right-radius:6px}
+.msg.ai{align-self:flex-start;background:var(--surface);border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:6px}
+.msg img{display:block;max-width:100%;border-radius:12px;margin-top:8px;border:1px solid rgba(255,255,255,.15)}
+.save-btn{margin-top:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-glow);background:rgba(139,92,246,.25);color:#f5d0fe;font-size:12px;font-weight:600;cursor:pointer}
+.bottom-dock{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:10px 14px 14px;background:linear-gradient(to top,rgba(8,5,15,.98) 72%,rgba(8,5,15,0))}
+.dock-inner{max-width:720px;margin:0 auto;position:relative}
+.plus-popup{position:absolute;bottom:66px;left:0;width:230px;background:var(--surface-elevated);backdrop-filter:blur(20px);border:1px solid var(--border-glow);border-radius:16px;padding:6px;display:none;flex-direction:column;gap:2px;box-shadow:0 14px 36px rgba(0,0,0,.75)}
+.live-voice-strip{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin-bottom:8px;border-radius:18px;background:linear-gradient(135deg,rgba(35,16,60,.95),rgba(18,10,32,.95));border:1px solid rgba(236,72,153,.5);box-shadow:0 8px 24px rgba(236,72,153,.2)}
+.live-pill{flex:1;padding:8px 14px;border-radius:999px;background:linear-gradient(90deg,rgba(139,92,246,.45),rgba(236,72,153,.5));border:1px solid rgba(244,114,182,.5);color:#fdf4ff;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tray{display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.tray.on{display:flex}
+.tchip{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 8px;border-radius:14px;background:var(--surface-elevated);border:1px solid var(--border-glow);font-size:12px;color:#f5d0fe;max-width:100%}
+.tchip img{width:36px;height:36px;border-radius:8px;object-fit:cover}
+.tchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.tchip button{width:24px;height:24px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer}
+.composer{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:24px;background:var(--surface-elevated);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(18px)}
+.composer input[type=text]{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--text-main);font-size:16px;padding:6px 4px}
+.composer input::placeholder{color:var(--text-muted)}
+.send-btn{width:38px;height:38px;flex:none;border-radius:50%;border:none;background:linear-gradient(135deg,#ec4899,#8b5cf6);color:#fff;font-size:16px;cursor:pointer;display:grid;place-items:center}
+.modal-backdrop{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal-card{width:100%;max-width:440px;background:#180d29;border:1px solid var(--border-glow);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.cam-view{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:14px;overflow:hidden}
+.cam-view video,.cam-view img{width:100%;height:100%;object-fit:cover;display:block}
+.cam-msg{font-size:13px;color:#fbcfe8;min-height:18px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.btn-secondary,.btn-primary{padding:9px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;color:#fff}
+.btn-secondary{background:rgba(255,255,255,.12)}
+.btn-primary{background:linear-gradient(135deg,#ec4899,#8b5cf6)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <button id="menuBtn" class="icon-btn" title="Menu">⋮</button>
+    <span class="brand-title">kaizenX</span>
+  </div>
+  <div class="header-right">
+    <button id="langChip" class="chip" title="Language">Hinglish</button>
+    <button id="newChatBtn" class="icon-btn" title="New Chat">↺</button>
+  </div>
+</header>
+
+<div id="menuDropdown" class="menu-dropdown">
+  <button id="openKeyBtn" class="menu-item">🔑 Server / API Status</button>
+  <button id="toggleCraftlandMenu" class="menu-item">🎮 Craftland Expert Mode</button>
+  <button id="toggleAutoSpeakMenu" class="menu-item">🔊 Auto Voice Reply: ON</button>
+  <button id="clearChatMenu" class="menu-item">🗑️ Clear Chat</button>
+</div>
+
+<main>
+  <div class="badge-row">
+    <button id="craftlandBadge" class="mode-pill">🎮 Craftland Expert: ON</button>
+    <span id="modelLabel" style="font-size:12px;color:#cbd5e1">gemini-3.8-flash</span>
+  </div>
+  <div id="statusBanner" class="status-banner"></div>
+  <div class="orb-stage"><div id="voiceOrb" class="voice-orb" title="Tap for Live Voice"></div></div>
+  <div id="chatList" class="chat-list"></div>
+</main>
+
+<div class="bottom-dock">
+  <div class="dock-inner">
+    <div id="plusPopup" class="plus-popup">
+      <button id="optImageUpload" class="plus-option">🖼️ Upload Image</button>
+      <button id="optCamera" class="plus-option">📷 Camera</button>
+      <button id="optImageGen" class="plus-option">✨ Generate Image</button>
+      <button id="optScreenShare" class="plus-option">🖥️ Screen Share</button>
+      <button id="optFileUpload" class="plus-option">📄 Upload File</button>
+      <button id="optTranslate" class="plus-option">🌐 Translate Last Reply</button>
+    </div>
+    <div id="liveVoiceStrip" class="live-voice-strip">
+      <button id="stripPlusBtn" class="icon-btn" type="button">+</button>
+      <button id="stripCamBtn" class="icon-btn" type="button" title="Camera">📷</button>
+      <div id="liveStatusPill" class="live-pill">Listening...</div>
+      <button id="stripMicBtn" class="icon-btn" type="button" title="Mute / Resume mic">🎙️</button>
+      <button id="stripCloseBtn" class="icon-btn" type="button" title="Stop Voice">✕</button>
+    </div>
+    <div id="tray" class="tray"></div>
+    <form id="composerForm" class="composer">
+      <button id="plusBtn" class="icon-btn" type="button" title="More options">+</button>
+      <input id="promptInput" type="text" placeholder="Ask kaizenX..." autocomplete="off" />
+      <button id="micBtn" class="icon-btn" type="button" title="Start Live Voice">🎙️</button>
+      <button class="send-btn" type="submit" title="Send">➤</button>
+    </form>
+  </div>
+</div>
+
+<input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden />
+<input id="fileInput" type="file" accept=".pdf,.txt,.md,.csv,.json,.js,.html,.css,.xml,application/pdf,text/plain" hidden />
+
+<div id="camModal" class="modal-backdrop">
+  <div class="modal-card">
+    <h3>Camera</h3>
+    <div class="cam-view">
+      <video id="camVideo" playsinline muted autoplay></video>
+      <img id="camShot" class="hidden" alt="Captured photo" />
+    </div>
+    <div id="camMsg" class="cam-msg"></div>
+    <div class="modal-actions">
+      <button id="camSwitch" class="btn-secondary" type="button">🔄 Switch</button>
+      <button id="camCapture" class="btn-primary" type="button">📸 Capture Photo</button>
+      <button id="camRetake" class="btn-secondary hidden" type="button">Retake</button>
+      <button id="camUse" class="btn-primary hidden" type="button">Use Photo</button>
+      <button id="camClose" class="btn-secondary" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k){ try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
+    set(k,v){ try { sessionStorage.setItem(k,v); } catch {} }
+  };
+  const LANGS = ["Hinglish", "Hindi", "English"];
+  const MAX_IMG = 8 * 1024 * 1024, MAX_FILE = 10 * 1024 * 1024;
+  const state = { lang: "Hinglish", craft: true, autoSpeak: true, voice: "off", muted: false,
+                  speaking: false, busy: false, img: null, file: null, history: [] };
+
+  const el = {};
+  ["menuBtn","menuDropdown","langChip","newChatBtn","openKeyBtn","toggleCraftlandMenu","craftlandBadge","modelLabel",
+   "toggleAutoSpeakMenu","clearChatMenu","statusBanner","voiceOrb","chatList","plusBtn","plusPopup","stripPlusBtn",
+   "stripCamBtn","stripMicBtn","stripCloseBtn","liveVoiceStrip","liveStatusPill","tray","composerForm","promptInput",
+   "micBtn","imageInput","fileInput","optImageUpload","optCamera","optImageGen","optScreenShare","optFileUpload",
+   "optTranslate","camModal","camVideo","camShot","camMsg","camSwitch","camCapture","camRetake","camUse","camClose"
+  ].forEach(id => el[id] = $(id));
+
+  let bannerTimer = null;
+  function showBanner(msg, ms = 4500) {
+    el.statusBanner.textContent = msg;
+    el.statusBanner.classList.add("visible");
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => el.statusBanner.classList.remove("visible"), ms);
+  }
+
+
+  /* ---------------- KaizenX 3D AI Orb (canvas) ---------------- */
+  const orb = (() => {
+    const host = el.voiceOrb, cv = document.createElement("canvas"); host.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const lowEnd = (navigator.hardwareConcurrency || 4) <= 4 || reduce;
+    const N = lowEnd ? 110 : 190;                       // particles
+    let W = 0, DPR = 1;
+    const resize = () => {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = host.clientWidth || 156; cv.width = cv.height = Math.round(W * DPR);
+    };
+    resize(); addEventListener("resize", resize);
+
+    // particles on a Fibonacci sphere (+ a few random shell depths)
+    const P = [], ga = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N; i++) {
+      const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = ga * i;
+      P.push({ x: Math.cos(th) * r, y, z: Math.sin(th) * r, s: 0.88 + Math.random() * 0.2,
+               ph: Math.random() * 6.283, hue: i % 3 });
+    }
+    const PAL = [[168, 85, 247], [56, 189, 248], [34, 238, 255]];   // neon purple, electric blue, cyan
+    const rgba = (c, a) => `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+    const mix = (a, b, t) => [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t, a[2] + (b[2]-a[2])*t];
+
+    // per-state targets: spin speed, breathe amp/speed, glow, particle jitter, ring energy, colour mix (0 purple .. 1 cyan)
+    const MODES = {
+      idle:      { spin: .16, amp: .025, hz: .35, glow: .55, jit: .02, ring: .25, col: .25 },
+      listening: { spin: .45, amp: .07,  hz: 1.15, glow: .95, jit: .05, ring: .75, col: .8 },
+      thinking:  { spin: 1.5, amp: .035, hz: 2.2, glow: .85, jit: .08, ring: .55, col: .45 },
+      speaking:  { spin: .7,  amp: .08,  hz: 3.0, glow: 1.15, jit: .14, ring: 1.0, col: .55 },
+      muted:     { spin: .08, amp: .015, hz: .25, glow: .3,  jit: .01, ring: .1,  col: .1 }
+    };
+    let mode = "idle", cur = { ...MODES.idle }, inLevel = 0, outLevel = 0, lvlIn = 0, lvlOut = 0;
+    let ay = 0, ax = .35, t0 = performance.now(), last = t0, run = false;
+
+    function readOut() {                      // Gemini Live playback loudness
+      const an = typeof live !== "undefined" && live.an;
+      if (!an) return null;
+      const buf = readOut.b || (readOut.b = new Uint8Array(an.fftSize)); an.getByteTimeDomainData(buf);
+      let s = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+      return Math.min(1, Math.sqrt(s / buf.length) * 4.5);
+    }
+
+    function frame(now) {
+      if (!run) return;
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = (now - t0) / 1000;
+      const T = MODES[mode], k = 1 - Math.pow(0.001, dt);      // smooth ease between states
+      for (const key in T) cur[key] += (T[key] - cur[key]) * k;
+
+      // audio levels (real when available, natural-looking synthetic otherwise)
+      let tin = inLevel, tout = 0;
+      if (mode === "speaking") { const r = readOut(); tout = r != null ? r : (.45 + .35 * Math.sin(t * 9) * Math.sin(t * 5.3 + 1) + .15 * Math.sin(t * 17)); }
+      if (mode === "listening" && tin < .02) tin = .08 + .06 * Math.sin(t * 2 * Math.PI * cur.hz);
+      lvlIn += (tin - lvlIn) * Math.min(1, dt * 12); lvlOut += (Math.max(0, tout) - lvlOut) * Math.min(1, dt * 14);
+      inLevel *= 0.85;
+      const lvl = mode === "speaking" ? lvlOut : lvlIn;
+
+      ay += cur.spin * dt; ax = .35 + Math.sin(t * .3) * .12;
+      const pulse = Math.sin(t * 2 * Math.PI * cur.hz) * cur.amp;
+      const scale = 1 + pulse + lvl * (mode === "speaking" ? .14 : .1);
+      const c = W * DPR, cx = c / 2, R = c * 0.27 * scale, col = mix(PAL[0], PAL[2], cur.col);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c, c);
+      ctx.globalCompositeOperation = "lighter";
+
+      // outer aura
+      const aura = ctx.createRadialGradient(cx, cx, R * .5, cx, cx, c * .5);
+      aura.addColorStop(0, rgba(col, .38 * cur.glow)); aura.addColorStop(.45, rgba(PAL[0], .16 * cur.glow));
+      aura.addColorStop(.75, rgba(PAL[1], .06 * cur.glow)); aura.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = aura; ctx.fillRect(0, 0, c, c);
+
+      // glass core
+      const core = ctx.createRadialGradient(cx - R * .3, cx - R * .35, R * .05, cx, cx, R);
+      core.addColorStop(0, "rgba(255,255,255,.55)"); core.addColorStop(.22, rgba(PAL[2], .55));
+      core.addColorStop(.6, rgba(PAL[0], .38)); core.addColorStop(1, rgba(PAL[1], .5));
+      ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cx, R, 0, 6.283); ctx.fill();
+      // rim light
+      ctx.lineWidth = Math.max(1, c * .008); ctx.strokeStyle = rgba(PAL[2], .55 * cur.glow);
+      ctx.beginPath(); ctx.arc(cx, cx, R, 0, 6.283); ctx.stroke();
+
+      // energy rings (tilted 3D ellipses orbiting the core)
+      const rings = lowEnd ? 2 : 3;
+      for (let i = 0; i < rings; i++) {
+        const a = ay * (1.2 + i * .5) + i * 2.1, tilt = 1.05 + i * .5 + Math.sin(t * .4 + i) * .15;
+        ctx.save(); ctx.translate(cx, cx); ctx.rotate(a);
+        ctx.scale(1, Math.abs(Math.cos(tilt)) * .9 + .12);
+        const rr = R * (1.28 + i * .13 + lvl * .12);
+        const g = ctx.createLinearGradient(-rr, 0, rr, 0);
+        g.addColorStop(0, rgba(PAL[0], 0)); g.addColorStop(.5, rgba(PAL[(i + 1) % 3], .75 * cur.ring)); g.addColorStop(1, rgba(PAL[2], 0));
+        ctx.strokeStyle = g; ctx.lineWidth = c * .006 * (1 + lvl);
+        ctx.beginPath(); ctx.arc(0, 0, rr, 0, 6.283); ctx.stroke(); ctx.restore();
+      }
+
+      // ripples (listening / speaking)
+      if (cur.ring > .5) {
+        for (let i = 0; i < 2; i++) {
+          const f = ((t * (.5 + lvl * .6) + i * .5) % 1), rr = R * (1.05 + f * .75);
+          ctx.strokeStyle = rgba(mix(PAL[1], PAL[2], i), (1 - f) * .35 * cur.ring);
+          ctx.lineWidth = c * .004; ctx.beginPath(); ctx.arc(cx, cx, rr, 0, 6.283); ctx.stroke();
+        }
+      }
+
+      // 3D rotating particles
+      const sy = Math.sin(ay), cy = Math.cos(ay), sx = Math.sin(ax), cxr = Math.cos(ax);
+      for (let i = 0; i < N; i++) {
+        const p = P[i];
+        let x = p.x * cy + p.z * sy, z = -p.x * sy + p.z * cy, y = p.y * cxr - z * sx; z = p.y * sx + z * cxr;
+        const wob = 1 + Math.sin(t * 2 + p.ph) * cur.jit + lvl * .18 * Math.sin(p.ph * 3 + t * 8);
+        const rad = R * 1.12 * p.s * wob, persp = 1 / (1.9 - z * .55);
+        const px = cx + x * rad * persp * 1.9, py = cx + y * rad * persp * 1.9;
+        const depth = (z + 1) / 2, size = c * (.0055 + depth * .0075) * (1 + lvl * .6);
+        const cc = PAL[p.hue], a = (.25 + depth * .75) * Math.min(1, cur.glow);
+        ctx.fillStyle = rgba(cc, a); ctx.beginPath(); ctx.arc(px, py, size, 0, 6.283); ctx.fill();
+        if (depth > .7) { ctx.fillStyle = rgba(cc, a * .22); ctx.beginPath(); ctx.arc(px, py, size * 3, 0, 6.283); ctx.fill(); }
+      }
+
+      // bright inner energy nucleus
+      const nuc = ctx.createRadialGradient(cx, cx, 0, cx, cx, R * (.45 + lvl * .25));
+      nuc.addColorStop(0, "rgba(255,255,255,.9)"); nuc.addColorStop(.3, rgba(PAL[2], .55 * cur.glow)); nuc.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = nuc; ctx.beginPath(); ctx.arc(cx, cx, R * .8, 0, 6.283); ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      requestAnimationFrame(frame);
+    }
+    function start() { if (run) return; run = true; last = performance.now(); requestAnimationFrame(frame); }
+    document.addEventListener("visibilitychange", () => { if (document.hidden) run = false; else start(); });
+    start();
+    return { set(m) { mode = MODES[m] ? m : "idle"; }, mic(v) { if (v > inLevel) inLevel = v; } };
+  })();
+
+  /* ---------------- UI helpers ---------------- */
+  function syncUI() {
+    el.langChip.textContent = state.lang;
+    el.craftlandBadge.textContent = `🎮 Craftland Expert: ${state.craft ? "ON" : "OFF"}`;
+    el.toggleAutoSpeakMenu.textContent = `🔊 Auto Voice Reply: ${state.autoSpeak ? "ON" : "OFF"}`;
+    const on = state.voice !== "off";
+    el.liveVoiceStrip.classList.toggle("active", on);
+    el.stripMicBtn.classList.toggle("off", state.muted);
+    el.voiceOrb.classList.toggle("active", on || state.speaking);
+    orb.set(state.speaking ? "speaking" : !on ? "idle" : state.muted ? "muted" : state.busy ? "thinking" : "listening");
+    el.voiceOrb.dataset.state = state.speaking ? "speaking" : !on ? "idle" : state.muted ? "muted" : state.busy ? "thinking" : "listening";
+    const tag = state.voice === "live" ? "Live" : "Browser voice";
+    el.liveStatusPill.textContent = !on ? "Voice off"
+      : state.muted ? "Mic muted — tap 🎙️ to resume"
+      : state.busy ? "Soch raha hoon..."
+      : state.speaking ? `Bol raha hoon... (${tag})`
+      : `Listening (${tag} • ${state.lang})`;
+    renderTray();
+  }
+
+  function renderTray() {
+    el.tray.innerHTML = "";
+    const mk = (inner, onRemove, label) => {
+      const c = document.createElement("div"); c.className = "tchip";
+      inner.forEach(n => c.appendChild(n));
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "✕"; b.title = "Remove " + label;
+      b.onclick = () => { onRemove(); syncUI(); };
+      c.appendChild(b); el.tray.appendChild(c);
+    };
+    if (state.img) {
+      const i = document.createElement("img"); i.src = state.img.url; i.alt = "Preview";
+      const s = document.createElement("span"); s.textContent = "Image";
+      mk([i, s], () => { state.img = null; }, "image");
+    }
+    if (state.file) {
+      const s = document.createElement("span"); s.textContent = "📄 " + state.file.name;
+      mk([s], () => { state.file = null; }, "file");
+    }
+    el.tray.classList.toggle("on", !!(state.img || state.file));
+  }
+
+  function addMsg(role, text, imgUrl, saveName) {
+    const d = document.createElement("div");
+    d.className = "msg " + role;
+    d.textContent = text;
+    if (imgUrl) {
+      const i = document.createElement("img"); i.src = imgUrl; i.alt = "kaizenX media"; d.appendChild(i);
+      if (saveName) {
+        const b = document.createElement("button"); b.type = "button"; b.className = "save-btn"; b.textContent = "💾 Save image";
+        b.onclick = () => { const a = document.createElement("a"); a.href = imgUrl; a.download = saveName; document.body.appendChild(a); a.click(); a.remove(); };
+        d.appendChild(b);
+      }
+    }
+    el.chatList.appendChild(d);
+    d.scrollIntoView({ behavior: "smooth", block: "end" });
+    return d;
+  }
+
+  function resetChat() {
+    state.history = []; state.img = null; state.file = null;
+    el.chatList.innerHTML = "";
+    addMsg("ai", "Namaste! Main kaizenX hoon. Chat, live voice, image, camera ya file — jo bhi chahiye pucho. Free Fire Craftland maps aur scripts me bhi madad karta hoon.");
+    syncUI();
+  }
+
+  /* ---------------- Backend API ---------------- */
+  async function api(url, body, method = "POST") {
+    const headers = { "Content-Type": "application/json" };
+    const pw = store.get("kx_pw"); if (pw) headers["x-app-password"] = pw;
+    let res;
+    try { res = await fetch(url, { method, headers, body: method === "POST" ? JSON.stringify(body || {}) : undefined }); }
+    catch { throw new Error("Backend se connect nahi ho paya. Kya server chal raha hai? (npm start)"); }
+    let data = {}; try { data = await res.json(); } catch {}
+    if (res.status === 401) {
+      const p = prompt("Access password daalein:");
+      if (p) { store.set("kx_pw", p); return api(url, body, method); }
+    }
+    if (!res.ok) throw new Error(data.error || ("Server error " + res.status));
+    return data;
+  }
+
+  /* ---------------- Chat ---------------- */
+  function compact(history) {
+    const keep = history.slice(-24), cut = keep.length - 4;
+    return keep.map((m, i) => i >= cut ? m : { role: m.role, parts: m.parts.map(p => p.inline_data ? { text: "[attachment omitted]" } : p) });
+  }
+
+  async function sendMessage(text) {
+    text = (text || "").trim();
+    const img = state.img, file = state.file;
+    if (state.busy || (!text && !img && !file)) return;
+    if (!text) text = img ? "Is image ko detail me analyze karo." : "Is file ka summary do aur important points batao.";
+    const parts = [];
+    if (file) parts.push(file.text != null ? { text: `[File: ${file.name}]\n${file.text}` } : { inline_data: { mime_type: file.mime, data: file.data } });
+    if (img) parts.push({ inline_data: { mime_type: img.mime, data: img.data } });
+    parts.push({ text });
+
+    addMsg("user", text + (file ? `\n📄 ${file.name}` : ""), img ? img.url : null);
+    el.promptInput.value = "";
+    state.img = null; state.file = null;
+    const wait = addMsg("ai", "…");
+    state.busy = true; stopRecog(); syncUI();
+    try {
+      const r = await api("/api/chat", { contents: [...compact(state.history), { role: "user", parts }], lang: state.lang, craft: state.craft });
+      wait.textContent = r.text;
+      state.history.push({ role: "user", parts }, { role: "model", parts: [{ text: r.text }] });
+      if (state.history.length > 24) state.history = state.history.slice(-24);
+      if (r.model) el.modelLabel.textContent = r.model;
+      state.busy = false; syncUI();
+      if (state.autoSpeak && state.voice !== "live") speak(r.text); else startRecog();
+    } catch (e) {
+      wait.textContent = "⚠️ " + e.message;
+      state.img = img; state.file = file;           // restore attachments so the user can retry
+      state.busy = false; syncUI(); startRecog();
+    }
+  }
+
+  async function generateImage(prompt) {
+    if (state.busy) return;
+    addMsg("user", "✨ " + prompt);
+    const wait = addMsg("ai", "Image bana raha hoon...");
+    const src = state.img; state.busy = true; syncUI();
+    try {
+      const r = await api("/api/image", { prompt, image: src ? { mime: src.mime, data: src.data } : undefined });
+      wait.remove();
+      const ext = (r.image.mime.split("/")[1] || "png").replace("jpeg", "jpg");
+      addMsg("ai", r.text || "Ye lo aapki image!", `data:${r.image.mime};base64,${r.image.data}`, `kaizenx-${Date.now()}.${ext}`);
+      state.img = null;
+    } catch (e) { wait.textContent = "⚠️ Image error: " + e.message; }
+    finally { state.busy = false; syncUI(); }
+  }
+
+  function translateLast() {
+    const last = [...state.history].reverse().find(h => h.role === "model");
+    if (!last) { showBanner("Translate karne ke liye koi reply nahi hai."); return; }
+    const to = state.lang === "English" ? "Hinglish" : state.lang === "Hinglish" ? "Hindi (Devanagari)" : "English";
+    sendMessage(`Is text ko ${to} me translate karo:\n\n${last.parts[0].text}`);
+  }
+
+  /* ---------------- Attachments ---------------- */
+  const toB64 = (blob) => new Promise((res, rej) => {
+    const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob);
+  });
+
+  async function setImage(file) {
+    if (!file) return;
+    const okType = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+    if (!okType) { showBanner("Sirf JPG, JPEG, PNG ya WEBP image allowed hai."); return; }
+    if (file.size > MAX_IMG) { showBanner("Image 8MB se choti honi chahiye."); return; }
+    state.img = { mime: file.type, data: await toB64(file), url: URL.createObjectURL(file) };
+    syncUI(); showBanner("Image attach ho gayi. Ab sawaal likhein ya Send dabayein.");
+  }
+
+  async function setFile(f) {
+    if (!f) return;
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    const textExt = ["txt", "md", "csv", "json", "js", "html", "css", "xml"];
+    if (f.size > MAX_FILE) { showBanner("File 10MB se choti honi chahiye."); return; }
+    if (ext === "pdf" || f.type === "application/pdf") {
+      state.file = { name: f.name, mime: "application/pdf", data: await toB64(f) };
+    } else if (textExt.includes(ext)) {
+      state.file = { name: f.name, text: (await f.text()).slice(0, 200000) };
+    } else if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+      return setImage(f);
+    } else { showBanner("Supported: PDF, TXT, MD, CSV, JSON, JS, HTML, CSS, XML ya image (JPG/PNG/WEBP). DOCX abhi supported nahi hai."); return; }
+    syncUI(); showBanner("File attach ho gayi: " + f.name);
+  }
+
+  async function screenShare() {
+    if (!navigator.mediaDevices?.getDisplayMedia) { showBanner("Screen share is device/browser par support nahi hai."); return; }
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const v = document.createElement("video"); v.srcObject = stream; v.muted = true; await v.play();
+      await new Promise(r => setTimeout(r, 400));
+      const c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight;
+      c.getContext("2d").drawImage(v, 0, 0);
+      stream.getTracks().forEach(t => t.stop());
+      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+      await setImage(new File([blob], "screen.jpg", { type: "image/jpeg" }));
+    } catch { showBanner("Screen share cancel ho gaya."); }
+  }
+
+  /* ---------------- Camera (getUserMedia) ---------------- */
+  const cam = { stream: null, facing: "environment", blob: null };
+  const camState = (shot) => {
+    el.camVideo.classList.toggle("hidden", shot); el.camShot.classList.toggle("hidden", !shot);
+    el.camCapture.classList.toggle("hidden", shot); el.camSwitch.classList.toggle("hidden", shot);
+    el.camRetake.classList.toggle("hidden", !shot); el.camUse.classList.toggle("hidden", !shot);
+  };
+  function stopCam() { if (cam.stream) { cam.stream.getTracks().forEach(t => t.stop()); cam.stream = null; } }
+  async function startCam() {
+    stopCam(); el.camMsg.textContent = "Camera start ho raha hai...";
+    try {
+      cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: cam.facing }, width: { ideal: 1280 } }, audio: false });
+      el.camVideo.srcObject = cam.stream; await el.camVideo.play(); el.camMsg.textContent = "";
+    } catch (e) {
+      el.camMsg.textContent = e.name === "NotAllowedError" ? "Camera permission deny hui. Browser ke address bar / site settings me Camera allow karein."
+        : e.name === "NotFoundError" ? "Is device par koi camera nahi mila."
+        : "Camera start nahi ho paya (" + (e.name || "error") + ").";
+    }
+  }
+  async function openCamera() {
+    el.plusPopup.classList.remove("open");
+    if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) { showBanner("Camera ke liye supported browser aur HTTPS (ya localhost) chahiye.", 6000); return; }
+    cam.blob = null; camState(false); el.camModal.classList.add("open"); await startCam();
+  }
+  function closeCamera() { stopCam(); el.camModal.classList.remove("open"); }
+  el.camSwitch.onclick = () => { cam.facing = cam.facing === "environment" ? "user" : "environment"; startCam(); };
+  el.camCapture.onclick = async () => {
+    if (!cam.stream || !el.camVideo.videoWidth) { el.camMsg.textContent = "Camera abhi ready nahi hai."; return; }
+    const c = document.createElement("canvas"); c.width = el.camVideo.videoWidth; c.height = el.camVideo.videoHeight;
+    c.getContext("2d").drawImage(el.camVideo, 0, 0);
+    cam.blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
+    el.camShot.src = URL.createObjectURL(cam.blob); camState(true);
+  };
+  el.camRetake.onclick = () => { cam.blob = null; camState(false); };
+  el.camUse.onclick = async () => { if (cam.blob) await setImage(new File([cam.blob], "camera.jpg", { type: "image/jpeg" })); closeCamera(); };
+  el.camClose.onclick = closeCamera;
+
+  /* ---------------- Voice: browser fallback (SpeechRecognition / speechSynthesis) ---------------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechLang = () => state.lang === "English" ? "en-IN" : "hi-IN";
+  let recog = null;
+
+  function speak(text) {
+    if (!state.autoSpeak || !("speechSynthesis" in window)) { startRecog(); return; }
+    const clean = text.replace(/[*`#_~]/g, "").slice(0, 450);
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(clean); u.lang = speechLang();
+    u.onstart = () => { state.speaking = true; stopRecog(); syncUI(); };
+    const done = () => { state.speaking = false; syncUI(); startRecog(); };
+    u.onend = done; u.onerror = done;
+    window.speechSynthesis.speak(u);
+  }
+  function startRecog() {
+    if (state.voice !== "browser" || state.muted || state.speaking || state.busy || !SR || recog) return;
+    recog = new SR(); recog.lang = speechLang(); recog.interimResults = false; recog.continuous = false;
+    recog.onresult = (e) => { const t = e.results[0][0].transcript.trim(); if (t) sendMessage(t); };
+    recog.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { showBanner("Microphone permission deny hui. Browser settings me allow karein.", 7000); stopVoice(); }
+    };
+    recog.onend = () => { recog = null; setTimeout(startRecog, 250); };
+    try { recog.start(); } catch { recog = null; }
+  }
+  function stopRecog() { if (recog) { const r = recog; recog = null; r.onend = null; try { r.abort(); } catch {} } }
+
+  /* ---------------- Voice: Gemini Live API (short-lived token from backend) ---------------- */
+  const live = { ws: null, inCtx: null, outCtx: null, stream: null, node: null, next: 0, srcs: new Set(), uBub: null, aBub: null };
+
+  function b64(buf) {
+    const b = new Uint8Array(buf); let s = "";
+    for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function playPcm(data) {
+    if (!live.outCtx) live.outCtx = new AudioContext({ sampleRate: 24000 });
+    const ctx = live.outCtx; ctx.resume();
+    const bin = atob(data), n = bin.length >> 1, buf = ctx.createBuffer(1, n, 24000), ch = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) { let v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8); if (v >= 0x8000) v -= 0x10000; ch[i] = v / 32768; }
+    const s = ctx.createBufferSource(); s.buffer = buf;
+    if (!live.an) { live.an = ctx.createAnalyser(); live.an.fftSize = 256; live.an.connect(ctx.destination); }
+    s.connect(live.an);
+    const t = Math.max(ctx.currentTime + 0.02, live.next); s.start(t); live.next = t + buf.duration;
+    live.srcs.add(s);
+    s.onended = () => { live.srcs.delete(s); if (!live.srcs.size) { state.speaking = false; syncUI(); } };
+    if (!state.speaking) { state.speaking = true; syncUI(); }
+  }
+  function flushAudio() { live.srcs.forEach(s => { try { s.stop(); } catch {} }); live.srcs.clear(); live.next = 0; state.speaking = false; syncUI(); }
+
+  function handleLive(m) {
+    const sc = m.serverContent; if (!sc) return;
+    if (sc.interrupted) flushAudio();
+    for (const p of (sc.modelTurn && sc.modelTurn.parts) || []) { const d = p.inlineData || p.inline_data; if (d && d.data) playPcm(d.data); }
+    if (sc.inputTranscription && sc.inputTranscription.text) {
+      live.aBub = null; if (!live.uBub) live.uBub = addMsg("user", ""); live.uBub.textContent += sc.inputTranscription.text;
+    }
+    if (sc.outputTranscription && sc.outputTranscription.text) {
+      live.uBub = null; if (!live.aBub) live.aBub = addMsg("ai", ""); live.aBub.textContent += sc.outputTranscription.text;
+    }
+    if (sc.turnComplete) { live.uBub = null; live.aBub = null; }
+  }
+
+  function openWs(t) {
+    return new Promise((res, rej) => {
+      const ws = new WebSocket(`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${t.version}.GenerativeService.BidiGenerateContentConstrained?access_token=${encodeURIComponent(t.token)}`);
+      let ok = false;
+      const to = setTimeout(() => { try { ws.close(); } catch {} rej(new Error("Live API timeout")); }, 9000);
+      ws.onopen = () => ws.send(JSON.stringify({ setup: {
+        model: "models/" + t.model,
+        generationConfig: { responseModalities: ["AUDIO"] },
+        systemInstruction: { parts: [{ text: t.systemInstruction }] },
+        inputAudioTranscription: {}, outputAudioTranscription: {}
+      } }));
+      ws.onmessage = async (ev) => {
+        let m; try { m = JSON.parse(typeof ev.data === "string" ? ev.data : await ev.data.text()); } catch { return; }
+        if (m.setupComplete && !ok) { ok = true; clearTimeout(to); res(ws); }
+        handleLive(m);
+      };
+      ws.onclose = (ev) => {
+        clearTimeout(to);
+        if (!ok) rej(new Error(`Live API connection band (${ev.code}) ${String(ev.reason || "").slice(0, 120)}`.trim()));
+        else if (state.voice === "live") { showBanner("Live session khatam ho gaya. Dobara start karein.", 6000); stopVoice(); }
+      };
+    });
+  }
+
+  async function startMicPipe() {
+    const ctx = live.inCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    const code = "class P extends AudioWorkletProcessor{process(i){const c=i[0][0];if(c)this.port.postMessage(c.slice(0));return true}}registerProcessor('pcm',P)";
+    await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: "application/javascript" })));
+    const src = ctx.createMediaStreamSource(live.stream);
+    const node = live.node = new AudioWorkletNode(ctx, "pcm");
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    src.connect(node); node.connect(mute); mute.connect(ctx.destination);
+    const ratio = ctx.sampleRate / 16000; let acc = new Float32Array(0);
+    node.port.onmessage = (e) => {
+      if (state.muted || !live.ws || live.ws.readyState !== 1) return;
+      { const d = e.data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * d[i]; orb.mic(Math.min(1, Math.sqrt(s / (d.length / 4)) * 6)); }
+      const c = e.data, n = new Float32Array(acc.length + c.length); n.set(acc); n.set(c, acc.length); acc = n;
+      if (acc.length < Math.floor(ratio * 800)) return;
+      const outLen = Math.floor(acc.length / ratio), pcm = new Int16Array(outLen);
+      for (let i = 0; i < outLen; i++) {
+        const s = Math.floor(i * ratio), e2 = Math.max(s + 1, Math.min(acc.length, Math.floor((i + 1) * ratio)));
+        let sum = 0; for (let k = s; k < e2; k++) sum += acc[k];
+        const v = Math.max(-1, Math.min(1, sum / (e2 - s))); pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+      }
+      acc = acc.slice(Math.floor(outLen * ratio));
+      live.ws.send(JSON.stringify({ realtimeInput: { audio: { data: b64(pcm.buffer), mimeType: "audio/pcm;rate=16000" } } }));
+    };
+  }
+
+  async function startLive() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) { const e = new Error("Mic ke liye HTTPS ya localhost zaroori hai."); e.noFallback = true; throw e; }
+    try { live.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    catch (err) {
+      const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+      const e = new Error(denied ? "Microphone permission deny hui. Browser/site settings me Microphone allow karein." : "Microphone nahi mila ya use nahi ho pa raha.");
+      e.noFallback = true; throw e;
+    }
+    let last;
+    for (const version of ["v1beta", "v1alpha"]) {
+      try {
+        const t = await api("/api/live-token", { lang: state.lang, craft: state.craft, version });
+        live.ws = await openWs(t); last = null; break;
+      } catch (e) { last = e; }
+    }
+    if (last) throw last;
+    await startMicPipe();
+  }
+
+  function stopLive() {
+    const ws = live.ws; live.ws = null;
+    if (ws) { ws.onclose = null; try { ws.close(); } catch {} }
+    if (live.stream) { live.stream.getTracks().forEach(t => t.stop()); live.stream = null; }
+    if (live.inCtx) { live.inCtx.close().catch(() => {}); live.inCtx = null; }
+    flushAudio();
+    if (live.outCtx) { live.outCtx.close().catch(() => {}); live.outCtx = null; live.an = null; }
+    live.uBub = live.aBub = null;
+  }
+
+  /* ---------------- Voice controls: Start / Stop / Mute / Resume ---------------- */
+  async function startVoice() {
+    if (state.voice !== "off") return;
+    state.muted = false; state.voice = "live"; syncUI();
+    showBanner("Live voice connect ho raha hai...", 9000);
+    try { await startLive(); showBanner("Live voice connected ✅ — ab bolein."); }
+    catch (e) {
+      stopLive();
+      if (e.noFallback || !SR) { state.voice = "off"; showBanner(e.noFallback ? e.message : "Live voice fail: " + e.message + "\nIs browser me speech recognition bhi nahi hai (Chrome use karein).", 9000); }
+      else { state.voice = "browser"; showBanner("Live API available nahi: " + e.message + "\nBrowser voice fallback chalu kiya.", 9000); startRecog(); }
+    }
+    syncUI();
+  }
+  function stopVoice() {
+    state.voice = "off"; state.muted = false;
+    stopRecog(); stopLive();
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    state.speaking = false; syncUI();
+  }
+  function toggleMute() {
+    if (state.voice === "off") return;
+    state.muted = !state.muted;
+    if (live.stream) live.stream.getAudioTracks().forEach(t => t.enabled = !state.muted);
+    if (state.voice === "browser") { if (state.muted) stopRecog(); else startRecog(); }
+    syncUI();
+  }
+
+  /* ---------------- Events ---------------- */
+  const closePanels = () => { el.menuDropdown.classList.remove("open"); el.plusPopup.classList.remove("open"); };
+  el.menuBtn.onclick = (e) => { e.stopPropagation(); el.plusPopup.classList.remove("open"); el.menuDropdown.classList.toggle("open"); };
+  const togglePlus = (e) => { e.stopPropagation(); el.menuDropdown.classList.remove("open"); el.plusPopup.classList.toggle("open"); };
+  el.plusBtn.onclick = togglePlus; el.stripPlusBtn.onclick = togglePlus;
+  document.addEventListener("click", (e) => { if (!el.menuDropdown.contains(e.target) && !el.plusPopup.contains(e.target)) closePanels(); });
+
+  el.langChip.onclick = () => { state.lang = LANGS[(LANGS.indexOf(state.lang) + 1) % LANGS.length]; syncUI(); };
+  el.newChatBtn.onclick = () => { stopVoice(); resetChat(); };
+  el.clearChatMenu.onclick = () => { closePanels(); resetChat(); };
+  const toggleCraft = () => { state.craft = !state.craft; closePanels(); syncUI(); };
+  el.toggleCraftlandMenu.onclick = toggleCraft; el.craftlandBadge.onclick = toggleCraft;
+  el.toggleAutoSpeakMenu.onclick = () => {
+    state.autoSpeak = !state.autoSpeak;
+    if (!state.autoSpeak && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    closePanels(); syncUI();
+  };
+  el.openKeyBtn.onclick = async () => {
+    closePanels();
+    try {
+      const c = await api("/api/config", null, "GET");
+      showBanner(`API key (server): ${c.keyConfigured ? "configured ✅" : "MISSING ❌"}\nChat: ${c.chat}\nLive: ${c.live || "unavailable"}\nImage: ${c.image || "unavailable"}${c.modelListVerified ? "" : "\n(model list verify nahi ho paya)"}`, 9000);
+    } catch (e) { showBanner("⚠️ " + e.message, 7000); }
+  };
+
+  el.composerForm.onsubmit = (e) => { e.preventDefault(); sendMessage(el.promptInput.value); };
+  el.micBtn.onclick = startVoice;
+  el.voiceOrb.onclick = () => state.voice === "off" ? startVoice() : stopVoice();
+  el.stripCloseBtn.onclick = stopVoice;
+  el.stripMicBtn.onclick = toggleMute;
+  el.stripCamBtn.onclick = openCamera;
+
+  el.optImageUpload.onclick = () => { closePanels(); el.imageInput.click(); };
+  el.optFileUpload.onclick = () => { closePanels(); el.fileInput.click(); };
+  el.optCamera.onclick = openCamera;
+  el.optScreenShare.onclick = () => { closePanels(); screenShare(); };
+  el.optTranslate.onclick = () => { closePanels(); translateLast(); };
+  el.optImageGen.onclick = () => {
+    closePanels();
+    const p = el.promptInput.value.trim();
+    if (!p) { showBanner("Pehle input box me image ka description likhein, phir ✨ Generate Image dabayein."); el.promptInput.focus(); return; }
+    el.promptInput.value = ""; generateImage(p);
+  };
+  el.imageInput.onchange = (e) => { setImage(e.target.files[0]); e.target.value = ""; };
+  el.fileInput.onchange = (e) => { setFile(e.target.files[0]); e.target.value = ""; };
+
+  resetChat();
+  api("/api/config", null, "GET").then(c => {
+    if (c.chat) el.modelLabel.textContent = c.chat;
+    if (!c.keyConfigured) showBanner("Server par GEMINI_API_KEY set nahi hai. README dekhein.", 9000);
+  }).catch(() => showBanner("Backend nahi mila. Terminal me `npm start` chalayein aur http://localhost:3000 se kholein.", 9000));
+})();
+</script>
+</body>
+</html>
